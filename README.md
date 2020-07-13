@@ -1,28 +1,23 @@
-# Chatbot
+# Dialogflow Chatbot
 
-Aplicativo de chatbot
+A new Flutter Dialogflow project.
 
-Tutorial de criação deste app: http://bit.ly/2mDfTBB
+## Getting Started
 
-<p align="center">
-    <img src="https://miro.medium.com/max/1440/1*2JCTeW4Use_q4OmA1gnC1w.png" width="800"/>
-</p>
+This project is a starting point for a Flutter Dialogflow application.
 
-## Como clonar e importar
+A few resources that inspired me with this project:
 
--   Faça um fork do projeto
--   Abra o terminal do Visual Studio Code
--   Digite (troque kleberandrade pelo nome do seu usuários): git clone https://github.com/kleberandrade/chatbot-aulas-flutter chatbot
+- [Medium: Kleber Andrade - Criando um Chatbot com Flutter e DialogFlow](https://medium.com/flutter-comunidade-br/criando-um-chatbot-com-flutter-e-dialogflow-f828e5301101)
+- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
+- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
 
-## Desafios
+## TODO
 
-- Melhorar a exibição das mensagens, aplicando um Clippy no estilo Whatsapp (se quiser, pode utilizar o [clippy_flutter](https://pub.dev/packages/clippy_flutter))
-- Adicionar data/hora de recebimento ou envio das mensagens ([DateTime class](https://api.flutter.dev/flutter/dart-core/DateTime-class.html))
-- Fazer o TextField de envio de mensagens ser igual ao do Whatsapp (borda redonda)
-- Criar um novo projeto de chatbot para um problema que deseja resolver e adicionar pelo menos 10 Intents
-- Utilizar pelo menos 1 Entities no DialogFlow ([tutorial de como usar](https://www.youtube.com/watch?v=3ePcMGW5cjo))
+- Change the message style, using a Clippy like WhatsApp's one ([clippy_flutter](https://pub.dev/packages/clippy_flutter))
+- Add date/hour on messages ([DateTime class](https://api.flutter.dev/flutter/dart-core/DateTime-class.html))
 
-## Licença
+## License
 
     Copyright 2019 Kleber de Oliveira Andrade
     

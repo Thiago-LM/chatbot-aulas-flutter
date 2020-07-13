@@ -1,12 +1,21 @@
-import 'package:chatbot/views/home_page.dart';
 import 'package:flutter/material.dart';
 
+import 'views/home_page.dart';
+
 void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      primarySwatch: Colors.deepOrange
-    ),
-    home: HomePage(),
-  ));
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      home: HomePage(),
+    );
+  }
 }

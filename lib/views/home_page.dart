@@ -1,7 +1,8 @@
-import 'package:chatbot/models/chat_message.dart';
-import 'package:chatbot/widgets/chat_message_list_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dialogflow/dialogflow_v2.dart';
+
+import 'package:dialogflow_chatbot/models/chat_message.dart';
+import 'package:dialogflow_chatbot/widgets/chat_message_list_item.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -22,7 +23,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: new AppBar(
-        title: Text('Chatbot - Professor'),
+        title: Text('Chatbot - Dialogflow'),
       ),
       body: Column(
         children: <Widget>[
@@ -49,7 +50,7 @@ class _HomePageState extends State<HomePage> {
   Future _dialogFlowRequest({String query}) async {
     // Adiciona uma mensagem temporária na lista
     _addMessage(
-        name: 'Professor',
+        name: 'Dialogflow',
         text: 'Escrevendo...',
         type: ChatMessageType.received);
 
@@ -65,7 +66,7 @@ class _HomePageState extends State<HomePage> {
 
     // adiciona a mensagem com a resposta do DialogFlow
     _addMessage(
-        name: 'Professor',
+        name: 'Dialogflow',
         text: response.getMessage() ?? '',
         type: ChatMessageType.received);
   }
@@ -73,7 +74,7 @@ class _HomePageState extends State<HomePage> {
   // Envia uma mensagem com o padrão a direita
   void _sendMessage({String text}) {
     _controllerText.clear();
-    _addMessage(name: 'Kleber Andrade', text: text, type: ChatMessageType.sent);
+    _addMessage(name: 'Usuário', text: text, type: ChatMessageType.sent);
   }
 
   // Adiciona uma mensagem na lista de mensagens
