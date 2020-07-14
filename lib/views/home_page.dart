@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:sound_stream/sound_stream.dart';
 import 'package:google_speech/google_speech.dart';
 import 'package:flutter_dialogflow/dialogflow_v2.dart';
@@ -15,18 +16,50 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-
+  final flutterTts = FlutterTts();
   final _recorder = RecorderStream();
   final _messageList = <ChatMessage>[];
   final _controllerText = new TextEditingController();
 
+  double rate = 1.0;
+  double pitch = 1.0;
+  double volume = 1.0;
   bool recognizing = false;
   bool recognizeFinished = false;
+
+  Future _setPortugueseBrazilian() async {
+    await flutterTts.setLanguage("pt-BR");
+  }
+
+  Future _getEngines() async {
+    var engines = await flutterTts.getEngines;
+    if (engines != null) {
+      for (dynamic engine in engines) {
+        print(' FlutterTts Engines: ' + engine);
+      }
+    }
+  }
+
+  Future _speak(String text) async {
+    await flutterTts.setVolume(volume);
+    await flutterTts.setSpeechRate(rate);
+    await flutterTts.setPitch(pitch);
+
+    if (text != null && text.isNotEmpty) {
+      await flutterTts.speak(text);
+    }
+  }
+
+  Future _stop() async {
+    await flutterTts.stop();
+  }
 
   @override
   void initState() {
     super.initState();
 
+    _getEngines();
+    _setPortugueseBrazilian();
     _recorder.initialize();
     _controllerText.addListener(() {
       print(' _controllerText.text = ' + _controllerText.text);
@@ -66,8 +99,8 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       recognizing = false;
     });
-    await _recorder.stop()
-        .then((_) => _sendMessage(text: _controllerText.text));
+    await _recorder.stop().then((_) =>
+        _sendMessage(text: _controllerText.text));
   }
 
   RecognitionConfig _getConfig() => RecognitionConfig(
@@ -80,6 +113,8 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     super.dispose();
+    
+    _stop();
     _controllerText.dispose();
   }
 
@@ -136,6 +171,9 @@ class _HomePageState extends State<HomePage> {
         name: 'Dialogflow',
         text: response.getMessage() ?? '',
         type: ChatMessageType.received);
+
+    // Reproduz a resposta em forma de áudio
+    _speak(response.getMessage());
   }
 
   // Envia uma mensagem com o padrão a direita
