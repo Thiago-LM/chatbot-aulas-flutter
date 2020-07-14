@@ -1,17 +1,80 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:sound_stream/sound_stream.dart';
+import 'package:google_speech/google_speech.dart';
 import 'package:flutter_dialogflow/dialogflow_v2.dart';
 
 import 'package:dialogflow_chatbot/models/chat_message.dart';
 import 'package:dialogflow_chatbot/widgets/chat_message_list_item.dart';
 
 class HomePage extends StatefulWidget {
+  const HomePage({Key key}) : super(key: key);
+
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+
+  final _recorder = RecorderStream();
   final _messageList = <ChatMessage>[];
   final _controllerText = new TextEditingController();
+
+  bool recognizing = false;
+  bool recognizeFinished = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _recorder.initialize();
+    _controllerText.addListener(() {
+      print(' _controllerText.text = ' + _controllerText.text);
+    });
+  }
+
+  void streamingRecognize() async {
+    await _recorder.start();
+
+    setState(() {
+      recognizing = true;
+    });
+
+    final serviceAccount = ServiceAccount.fromString(
+        '${(await rootBundle.loadString('assets/credentials.json'))}');
+    final speechToText = SpeechToText.viaServiceAccount(serviceAccount);
+    final config = _getConfig();
+
+    final responseStream = speechToText.streamingRecognize(
+        StreamingRecognitionConfig(config: config, interimResults: true),
+        _recorder.audioStream);
+
+    responseStream.listen((data) {
+      setState(() {
+        _controllerText.text =
+            data.results.map((e) => e.alternatives.first.transcript).join('\n');
+        recognizeFinished = true;
+      });
+    }, onDone: () {
+      setState(() {
+        recognizing = false;
+      });
+    });
+  }
+
+  void stopRecording() async {
+    await _recorder.stop();
+    setState(() {
+      recognizing = false;
+    });
+  }
+
+  RecognitionConfig _getConfig() => RecognitionConfig(
+      encoding: AudioEncoding.LINEAR16,
+      model: RecognitionModel.basic,
+      enableAutomaticPunctuation: true,
+      sampleRateHertz: 16000,
+      languageCode: 'pt-BR');
 
   @override
   void dispose() {
@@ -41,7 +104,8 @@ class _HomePageState extends State<HomePage> {
       child: ListView.builder(
         padding: EdgeInsets.all(8.0),
         reverse: true,
-        itemBuilder: (_, int index) => ChatMessageListItem(chatMessage: _messageList[index]),
+        itemBuilder: (_, int index) =>
+            ChatMessageListItem(chatMessage: _messageList[index]),
         itemCount: _messageList.length,
       ),
     );
@@ -55,8 +119,10 @@ class _HomePageState extends State<HomePage> {
         type: ChatMessageType.received);
 
     // Faz a autenticação com o serviço, envia a mensagem e recebe uma resposta da Intent
-    AuthGoogle authGoogle = await AuthGoogle(fileJson: "assets/credentials.json").build();
-    Dialogflow dialogflow = Dialogflow(authGoogle: authGoogle, language: "pt-BR");
+    AuthGoogle authGoogle =
+        await AuthGoogle(fileJson: "assets/credentials.json").build();
+    Dialogflow dialogflow =
+        Dialogflow(authGoogle: authGoogle, language: "pt-BR");
     AIResponse response = await dialogflow.detectIntent(query);
 
     // remove a mensagem temporária
@@ -73,21 +139,22 @@ class _HomePageState extends State<HomePage> {
 
   // Envia uma mensagem com o padrão a direita
   void _sendMessage({String text}) {
-    _controllerText.clear();
-    _addMessage(name: 'Usuário', text: text, type: ChatMessageType.sent);
+    if (text.isNotEmpty) {
+      _controllerText.clear();
+      _addMessage(name: 'Usuário', text: text, type: ChatMessageType.sent);
+    }
   }
 
   // Adiciona uma mensagem na lista de mensagens
   void _addMessage({String name, String text, ChatMessageType type}) {
-    var message = ChatMessage(
-        text: text, name: name, type: type);
+    var message = ChatMessage(text: text, name: name, type: type);
     setState(() {
       _messageList.insert(0, message);
     });
 
     if (type == ChatMessageType.sent) {
       // Envia a mensagem para o chatbot e aguarda sua resposta
-      _dialogFlowRequest(query: message.text);  
+      _dialogFlowRequest(query: message.text);
     }
   }
 
@@ -103,17 +170,34 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Botão para inserir o texto via áudio
+  Widget _buildVoiceButton() {
+    return Container(
+      margin: EdgeInsets.only(left: 8.0),
+      child: GestureDetector(
+        onLongPressStart: (_) {
+          setState(() {
+            streamingRecognize();
+          });
+        },
+        onLongPressEnd: (_) {
+          stopRecording();
+          _sendMessage(text: _controllerText.text);
+        },
+        child: Icon(
+          recognizing ? Icons.stop : Icons.mic,
+        ),
+      ),
+    );
+  }
+
   // Botão para enviar a mensagem
   Widget _buildSendButton() {
     return new Container(
       margin: new EdgeInsets.only(left: 8.0),
       child: new IconButton(
           icon: new Icon(Icons.send, color: Theme.of(context).accentColor),
-          onPressed: () {
-            if (_controllerText.text.isNotEmpty) {
-              _sendMessage(text: _controllerText.text);
-            }
-          }),
+          onPressed: () => _sendMessage(text: _controllerText.text)),
     );
   }
 
@@ -125,6 +209,7 @@ class _HomePageState extends State<HomePage> {
       child: new Row(
         children: <Widget>[
           _buildTextField(),
+          _buildVoiceButton(),
           _buildSendButton(),
         ],
       ),

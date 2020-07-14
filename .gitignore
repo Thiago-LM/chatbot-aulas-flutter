@@ -74,3 +74,4 @@
 
 # Credentials
 **/assets/credentials.json
+.flutter-plugins-dependencies
