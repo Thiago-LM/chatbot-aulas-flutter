@@ -63,10 +63,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   void stopRecording() async {
-    await _recorder.stop();
     setState(() {
       recognizing = false;
     });
+    await _recorder.stop()
+        .then((_) => _sendMessage(text: _controllerText.text));
   }
 
   RecognitionConfig _getConfig() => RecognitionConfig(
@@ -174,19 +175,11 @@ class _HomePageState extends State<HomePage> {
   Widget _buildVoiceButton() {
     return Container(
       margin: EdgeInsets.only(left: 8.0),
-      child: GestureDetector(
-        onLongPressStart: (_) {
-          setState(() {
-            streamingRecognize();
-          });
-        },
-        onLongPressEnd: (_) {
-          stopRecording();
-          _sendMessage(text: _controllerText.text);
-        },
-        child: Icon(
-          recognizing ? Icons.stop : Icons.mic,
-        ),
+      child: IconButton(
+        icon: recognizing
+            ? Icon(Icons.stop, color: Colors.red)
+            : Icon(Icons.mic, color: Theme.of(context).accentColor),
+        onPressed: recognizing ? stopRecording : streamingRecognize,
       ),
     );
   }
