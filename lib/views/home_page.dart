@@ -60,7 +60,7 @@ class _HomePageState extends State<HomePage> {
 
     _getEngines();
     _setPortugueseBrazilian();
-    _recorder.initialize();
+    _recorder.initialize().whenComplete(() => streamingRecognize());
     _controllerText.addListener(() {
       print(' _controllerText.text = ' + _controllerText.text);
     });
@@ -113,8 +113,9 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     super.dispose();
-    
+
     _stop();
+    stopRecording();
     _controllerText.dispose();
   }
 
