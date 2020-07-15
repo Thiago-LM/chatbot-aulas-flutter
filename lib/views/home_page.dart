@@ -99,8 +99,9 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       recognizing = false;
     });
-    await _recorder.stop().then((_) =>
-        _sendMessage(text: _controllerText.text));
+    await _recorder
+        .stop()
+        .then((_) => _sendMessage(text: _controllerText.text));
   }
 
   RecognitionConfig _getConfig() => RecognitionConfig(
@@ -122,9 +123,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: new AppBar(
-        title: Text('Chatbot - Dialogflow'),
-      ),
+      appBar: AppBar(title: Text('Chatbot - Dialogflow')),
       body: Column(
         children: <Widget>[
           _buildList(),
@@ -200,11 +199,11 @@ class _HomePageState extends State<HomePage> {
 
   // Campo para escrever a mensagem
   Widget _buildTextField() {
-    return new Flexible(
-      child: new TextField(
+    return Flexible(
+      child: TextField(
         controller: _controllerText,
-        decoration: new InputDecoration.collapsed(
-          hintText: "Enviar mensagem",
+        decoration: InputDecoration.collapsed(
+          hintText: 'Enviar mensagem',
         ),
       ),
     );
@@ -225,10 +224,10 @@ class _HomePageState extends State<HomePage> {
 
   // Botão para enviar a mensagem
   Widget _buildSendButton() {
-    return new Container(
-      margin: new EdgeInsets.only(left: 8.0),
-      child: new IconButton(
-          icon: new Icon(Icons.send, color: Theme.of(context).accentColor),
+    return Container(
+      margin: EdgeInsets.only(left: 8.0),
+      child: IconButton(
+          icon: Icon(Icons.send, color: Theme.of(context).accentColor),
           onPressed: () => _sendMessage(text: _controllerText.text)),
     );
   }
@@ -238,7 +237,7 @@ class _HomePageState extends State<HomePage> {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: new Row(
+      child: Row(
         children: <Widget>[
           _buildTextField(),
           _buildVoiceButton(),
