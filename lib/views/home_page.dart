@@ -1,8 +1,10 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:sound_stream/sound_stream.dart';
-import 'package:google_speech/google_speech.dart';
+import 'package:speech_to_text/speech_recognition_error.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_dialogflow/dialogflow_v2.dart';
 
 import 'package:dialogflow_chatbot/models/chat_message.dart';
@@ -16,16 +18,97 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final speech = SpeechToText();
   final flutterTts = FlutterTts();
-  final _recorder = RecorderStream();
   final _messageList = <ChatMessage>[];
-  final _controllerText = new TextEditingController();
+  final _controllerText = TextEditingController();
 
+  bool _hasSpeech = false;
   double rate = 1.0;
   double pitch = 1.0;
   double volume = 1.0;
-  bool recognizing = false;
-  bool recognizeFinished = false;
+  double level = 0.0;
+  double minSoundLevel = 50000;
+  double maxSoundLevel = -50000;
+  String lastWords = "";
+  String lastError = "";
+  String lastStatus = "";
+
+  Future<void> initSpeechState() async {
+    bool hasSpeech = await speech.initialize(
+        onError: errorListener, onStatus: statusListener);
+
+    if (!mounted) return;
+
+    setState(() {
+      _hasSpeech = hasSpeech;
+    });
+  }
+
+  void startListening() {
+    lastWords = "";
+    lastError = "";
+    speech.listen(
+        onResult: resultListener,
+        listenFor: Duration(days: 60),
+        localeId: 'pt-BR',
+        onSoundLevelChange: soundLevelListener,
+        cancelOnError: true,
+        partialResults: true,
+        onDevice: true,
+        listenMode: ListenMode.confirmation);
+    setState(() {});
+  }
+
+  void stopListening() {
+    speech.stop();
+    setState(() {
+      level = 0.0;
+    });
+  }
+
+  void cancelListening() {
+    speech.cancel();
+    setState(() {
+      level = 0.0;
+    });
+  }
+
+  void resultListener(SpeechRecognitionResult result) {
+    setState(() {
+      lastWords = "${result.recognizedWords} - ${result.finalResult}";
+      print(' lastWords: ' + lastWords);
+      _controllerText.text = result.recognizedWords;
+      if (result.finalResult) {
+        _sendMessage(text: result.recognizedWords);
+      }
+    });
+  }
+
+  void soundLevelListener(double level) {
+    minSoundLevel = min(minSoundLevel, level);
+    maxSoundLevel = max(maxSoundLevel, level);
+    //print("sound level $level: $minSoundLevel - $maxSoundLevel ");
+    setState(() {
+      this.level = level;
+    });
+  }
+
+  void errorListener(SpeechRecognitionError error) {
+    print(
+        "SpeechRecognitionError error status: $error, listening: ${speech.isListening}");
+    setState(() {
+      lastError = "${error.errorMsg} - ${error.permanent}";
+    });
+  }
+
+  void statusListener(String status) {
+    print(
+        "Received listener status: $status, listening: ${speech.isListening}");
+    setState(() {
+      lastStatus = "$status";
+    });
+  }
 
   Future _setPortugueseBrazilian() async {
     await flutterTts.setLanguage("pt-BR");
@@ -60,63 +143,19 @@ class _HomePageState extends State<HomePage> {
 
     _getEngines();
     _setPortugueseBrazilian();
-    _recorder.initialize().whenComplete(() => streamingRecognize());
+    initSpeechState().whenComplete(
+        () async => await Future.delayed(Duration(seconds: 1), startListening));
     _controllerText.addListener(() {
       print(' _controllerText.text = ' + _controllerText.text);
     });
   }
-
-  void streamingRecognize() async {
-    await _recorder.start();
-
-    setState(() {
-      recognizing = true;
-    });
-
-    final serviceAccount = ServiceAccount.fromString(
-        '${(await rootBundle.loadString('assets/credentials.json'))}');
-    final speechToText = SpeechToText.viaServiceAccount(serviceAccount);
-    final config = _getConfig();
-
-    final responseStream = speechToText.streamingRecognize(
-        StreamingRecognitionConfig(config: config, interimResults: true),
-        _recorder.audioStream);
-
-    responseStream.listen((data) {
-      setState(() {
-        _controllerText.text =
-            data.results.map((e) => e.alternatives.first.transcript).join('\n');
-        recognizeFinished = true;
-      });
-    }, onDone: () {
-      setState(() {
-        recognizing = false;
-      });
-    });
-  }
-
-  void stopRecording() async {
-    setState(() {
-      recognizing = false;
-    });
-    await _recorder
-        .stop()
-        .then((_) => _sendMessage(text: _controllerText.text));
-  }
-
-  RecognitionConfig _getConfig() => RecognitionConfig(
-      encoding: AudioEncoding.LINEAR16,
-      model: RecognitionModel.basic,
-      enableAutomaticPunctuation: true,
-      sampleRateHertz: 16000,
-      languageCode: 'pt-BR');
 
   @override
   void dispose() {
     super.dispose();
 
     _stop();
-    stopRecording();
+    stopListening();
     _controllerText.dispose();
   }
 
@@ -214,10 +253,12 @@ class _HomePageState extends State<HomePage> {
     return Container(
       margin: EdgeInsets.only(left: 8.0),
       child: IconButton(
-        icon: recognizing
-            ? Icon(Icons.stop, color: Colors.red)
-            : Icon(Icons.mic, color: Theme.of(context).accentColor),
-        onPressed: recognizing ? stopRecording : streamingRecognize,
+        icon: (_hasSpeech && !(speech.isListening))
+            ? Icon(Icons.mic, color: Theme.of(context).accentColor)
+            : Icon(Icons.stop, color: Colors.red),
+        onPressed: (_hasSpeech && !(speech.isListening))
+            ? startListening
+            : stopListening,
       ),
     );
   }
